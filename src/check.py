@@ -53,4 +53,3 @@ print(
         subset=["year", "month", "day", "hour"]
     ).sum()
 )
-print("hello world")
