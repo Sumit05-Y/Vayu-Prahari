@@ -7,7 +7,6 @@ from pathlib import Path
 # 1. PROJECT PATHS
 # ============================================================
 
-# Find the Vayu-Prahari project root automatically
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 INPUT_DIR = (
@@ -61,7 +60,6 @@ print("\n")
 print("=" * 60)
 print("LOADING DATASETS")
 print("=" * 60)
-
 
 for file in files:
 
@@ -151,7 +149,6 @@ if "timestamp" not in df.columns:
         errors="coerce"
     )
 
-
 else:
 
     df["timestamp"] = pd.to_datetime(
@@ -237,7 +234,6 @@ df = df.sort_values(
     "timestamp"
 ).reset_index(drop=True)
 
-
 print("\n")
 print("=" * 60)
 print("CLEAN DATASET")
@@ -270,296 +266,363 @@ rng = np.random.default_rng(42)
 
 
 # ============================================================
-# 12. GENERATE RANDOM INDICES
+# 12. ANOMALY COUNTS
 # ============================================================
 
-valid_indices = np.arange(
-    10,
-    len(synthetic) - 20
-)
+POINT_ANOMALY_COUNT = 20
 
-rng.shuffle(valid_indices)
+FROZEN_SEQUENCE_COUNT = 10
+FROZEN_LENGTH = 5
+
+DRIFT_SEQUENCE_COUNT = 10
+DRIFT_LENGTH = 10
+
+MISSING_SEQUENCE_COUNT = 10
+MISSING_LENGTH = 5
+
+
+# ============================================================
+# 13. USED INDEX TRACKING
+# ============================================================
 
 used_indices = set()
 
 
-def get_index():
+def mark_point_anomaly(
+    idx,
+    column,
+    value,
+    anomaly_type
+):
 
-    for idx in valid_indices:
+    synthetic.loc[
+        idx,
+        column
+    ] = value
 
-        if idx not in used_indices:
+    synthetic.loc[
+        idx,
+        "anomaly"
+    ] = 1
 
-            used_indices.add(idx)
+    synthetic.loc[
+        idx,
+        "anomaly_type"
+    ] = anomaly_type
 
-            return idx
+    used_indices.add(idx)
+
+
+def get_available_window(length):
+
+    max_start = len(synthetic) - length - 1
+
+    if max_start <= 10:
+        raise RuntimeError(
+            "Dataset is too small for anomaly generation."
+        )
+
+    attempts = 0
+
+    while attempts < 10000:
+
+        start_idx = int(
+            rng.integers(
+                10,
+                max_start
+            )
+        )
+
+        window = set(
+            range(
+                start_idx,
+                start_idx + length
+            )
+        )
+
+        if not window.intersection(
+            used_indices
+        ):
+
+            used_indices.update(window)
+
+            return start_idx
+
+        attempts += 1
 
     raise RuntimeError(
-        "Not enough unused indices."
+        "Could not find enough unused anomaly windows."
     )
 
 
 # ============================================================
-# 13. TEMPERATURE SPIKE
+# 14. TEMPERATURE SPIKES
 # ============================================================
 
-idx = get_index()
+for _ in range(POINT_ANOMALY_COUNT):
 
-synthetic.loc[
-    idx,
-    "temperature"
-] += rng.uniform(
-    15,
-    25
-)
+    idx = get_available_window(1)
 
-synthetic.loc[
-    idx,
-    "anomaly"
-] = 1
-
-synthetic.loc[
-    idx,
-    "anomaly_type"
-] = "temp_spike"
-
-
-# ============================================================
-# 14. TEMPERATURE DROP
-# ============================================================
-
-idx = get_index()
-
-synthetic.loc[
-    idx,
-    "temperature"
-] -= rng.uniform(
-    15,
-    25
-)
-
-synthetic.loc[
-    idx,
-    "anomaly"
-] = 1
-
-synthetic.loc[
-    idx,
-    "anomaly_type"
-] = "temp_drop"
-
-
-# ============================================================
-# 15. HUMIDITY SPIKE
-# ============================================================
-
-idx = get_index()
-
-synthetic.loc[
-    idx,
-    "humidity"
-] = 100
-
-synthetic.loc[
-    idx,
-    "anomaly"
-] = 1
-
-synthetic.loc[
-    idx,
-    "anomaly_type"
-] = "humidity_spike"
-
-
-# ============================================================
-# 16. HUMIDITY DROP
-# ============================================================
-
-idx = get_index()
-
-synthetic.loc[
-    idx,
-    "humidity"
-] = 5
-
-synthetic.loc[
-    idx,
-    "anomaly"
-] = 1
-
-synthetic.loc[
-    idx,
-    "anomaly_type"
-] = "humidity_drop"
-
-
-# ============================================================
-# 17. PRESSURE SPIKE
-# ============================================================
-
-idx = get_index()
-
-synthetic.loc[
-    idx,
-    "pressure"
-] += rng.uniform(
-    15,
-    25
-)
-
-synthetic.loc[
-    idx,
-    "anomaly"
-] = 1
-
-synthetic.loc[
-    idx,
-    "anomaly_type"
-] = "pressure_spike"
-
-
-# ============================================================
-# 18. PRESSURE DROP
-# ============================================================
-
-idx = get_index()
-
-synthetic.loc[
-    idx,
-    "pressure"
-] -= rng.uniform(
-    15,
-    25
-)
-
-synthetic.loc[
-    idx,
-    "anomaly"
-] = 1
-
-synthetic.loc[
-    idx,
-    "anomaly_type"
-] = "pressure_drop"
-
-
-# ============================================================
-# 19. FROZEN / STUCK TEMPERATURE SENSOR
-# ============================================================
-
-start_idx = get_index()
-
-frozen_value = synthetic.loc[
-    start_idx,
-    "temperature"
-]
-
-
-for i in range(5):
-
-    idx = start_idx + i
-
-    synthetic.loc[
+    original = synthetic.loc[
         idx,
         "temperature"
-    ] = frozen_value
+    ]
 
-    synthetic.loc[
-        idx,
-        "anomaly"
-    ] = 1
+    change = rng.uniform(
+        15,
+        25
+    )
 
-    synthetic.loc[
+    mark_point_anomaly(
         idx,
-        "anomaly_type"
-    ] = "temp_frozen"
+        "temperature",
+        original + change,
+        "temp_spike"
+    )
 
 
 # ============================================================
-# 20. TEMPERATURE DRIFT
+# 15. TEMPERATURE DROPS
 # ============================================================
 
-start_idx = get_index()
+for _ in range(POINT_ANOMALY_COUNT):
 
-drift_values = np.linspace(
-    0,
-    8,
-    10
-)
+    idx = get_available_window(1)
 
-
-for i in range(10):
-
-    idx = start_idx + i
-
-    synthetic.loc[
+    original = synthetic.loc[
         idx,
         "temperature"
-    ] += drift_values[i]
+    ]
 
-    synthetic.loc[
-        idx,
-        "anomaly"
-    ] = 1
+    change = rng.uniform(
+        15,
+        25
+    )
 
-    synthetic.loc[
+    mark_point_anomaly(
         idx,
-        "anomaly_type"
-    ] = "temp_drift"
+        "temperature",
+        original - change,
+        "temp_drop"
+    )
 
 
 # ============================================================
-# 21. MISSING TEMPERATURE
+# 16. HUMIDITY SPIKES
 # ============================================================
 
-start_idx = get_index()
+for _ in range(POINT_ANOMALY_COUNT):
+
+    idx = get_available_window(1)
+
+    mark_point_anomaly(
+        idx,
+        "humidity",
+        100,
+        "humidity_spike"
+    )
 
 
-for i in range(5):
+# ============================================================
+# 17. HUMIDITY DROPS
+# ============================================================
 
-    idx = start_idx + i
+for _ in range(POINT_ANOMALY_COUNT):
 
-    synthetic.loc[
+    idx = get_available_window(1)
+
+    mark_point_anomaly(
+        idx,
+        "humidity",
+        5,
+        "humidity_drop"
+    )
+
+
+# ============================================================
+# 18. PRESSURE SPIKES
+# ============================================================
+
+for _ in range(POINT_ANOMALY_COUNT):
+
+    idx = get_available_window(1)
+
+    original = synthetic.loc[
+        idx,
+        "pressure"
+    ]
+
+    change = rng.uniform(
+        15,
+        25
+    )
+
+    mark_point_anomaly(
+        idx,
+        "pressure",
+        original + change,
+        "pressure_spike"
+    )
+
+
+# ============================================================
+# 19. PRESSURE DROPS
+# ============================================================
+
+for _ in range(POINT_ANOMALY_COUNT):
+
+    idx = get_available_window(1)
+
+    original = synthetic.loc[
+        idx,
+        "pressure"
+    ]
+
+    change = rng.uniform(
+        15,
+        25
+    )
+
+    mark_point_anomaly(
+        idx,
+        "pressure",
+        original - change,
+        "pressure_drop"
+    )
+
+
+# ============================================================
+# 20. FROZEN / STUCK TEMPERATURE SENSOR
+# ============================================================
+
+for _ in range(FROZEN_SEQUENCE_COUNT):
+
+    start_idx = get_available_window(
+        FROZEN_LENGTH
+    )
+
+    frozen_value = synthetic.loc[
+        start_idx,
+        "temperature"
+    ]
+
+    for i in range(FROZEN_LENGTH):
+
+        idx = start_idx + i
+
+        synthetic.loc[
+            idx,
+            "temperature"
+        ] = frozen_value
+
+        synthetic.loc[
+            idx,
+            "anomaly"
+        ] = 1
+
+        synthetic.loc[
+            idx,
+            "anomaly_type"
+        ] = "temp_frozen"
+
+
+# ============================================================
+# 21. TEMPERATURE DRIFT
+# ============================================================
+
+for _ in range(DRIFT_SEQUENCE_COUNT):
+
+    start_idx = get_available_window(
+        DRIFT_LENGTH
+    )
+
+    drift_values = np.linspace(
+        0,
+        8,
+        DRIFT_LENGTH
+    )
+
+    original = synthetic.loc[
+        start_idx,
+        "temperature"
+    ]
+
+    for i in range(DRIFT_LENGTH):
+
+        idx = start_idx + i
+
+        synthetic.loc[
+            idx,
+            "temperature"
+        ] = (
+            original
+            + drift_values[i]
+        )
+
+        synthetic.loc[
+            idx,
+            "anomaly"
+        ] = 1
+
+        synthetic.loc[
+            idx,
+            "anomaly_type"
+        ] = "temp_drift"
+
+
+# ============================================================
+# 22. MISSING TEMPERATURE
+# ============================================================
+
+for _ in range(MISSING_SEQUENCE_COUNT):
+
+    start_idx = get_available_window(
+        MISSING_LENGTH
+    )
+
+    for i in range(MISSING_LENGTH):
+
+        idx = start_idx + i
+
+        synthetic.loc[
+            idx,
+            "temperature"
+        ] = np.nan
+
+        synthetic.loc[
+            idx,
+            "anomaly"
+        ] = 1
+
+        synthetic.loc[
+            idx,
+            "anomaly_type"
+        ] = "missing_temperature"
+
+
+# ============================================================
+# 23. MULTIVARIATE INCONSISTENCY
+# ============================================================
+
+for _ in range(POINT_ANOMALY_COUNT):
+
+    idx = get_available_window(1)
+
+    original = synthetic.loc[
         idx,
         "temperature"
-    ] = np.nan
+    ]
 
-    synthetic.loc[
+    mark_point_anomaly(
         idx,
-        "anomaly"
-    ] = 1
-
-    synthetic.loc[
-        idx,
-        "anomaly_type"
-    ] = "missing_temperature"
+        "temperature",
+        original + 10,
+        "multivariate_inconsistency"
+    )
 
 
 # ============================================================
-# 22. MULTIVARIATE INCONSISTENCY
-# ============================================================
-
-idx = get_index()
-
-synthetic.loc[
-    idx,
-    "temperature"
-] += 10
-
-synthetic.loc[
-    idx,
-    "anomaly"
-] = 1
-
-synthetic.loc[
-    idx,
-    "anomaly_type"
-] = (
-    "multivariate_inconsistency"
-)
-
-
-# ============================================================
-# 23. SORT DATA AGAIN
+# 24. SORT DATA AGAIN
 # ============================================================
 
 synthetic = synthetic.sort_values(
@@ -568,7 +631,7 @@ synthetic = synthetic.sort_values(
 
 
 # ============================================================
-# 24. PREVIOUS VALUES
+# 25. PREVIOUS VALUES
 # ============================================================
 
 synthetic["temp_prev"] = (
@@ -585,7 +648,7 @@ synthetic["pressure_prev"] = (
 
 
 # ============================================================
-# 25. DIFFERENCE FEATURES
+# 26. DIFFERENCE FEATURES
 # ============================================================
 
 synthetic["temp_diff"] = (
@@ -605,7 +668,7 @@ synthetic["pressure_diff"] = (
 
 
 # ============================================================
-# 26. TIME GAP
+# 27. TIME GAP
 # ============================================================
 
 synthetic["time_gap_hours"] = (
@@ -617,7 +680,7 @@ synthetic["time_gap_hours"] = (
 
 
 # ============================================================
-# 27. RATE OF CHANGE
+# 28. RATE OF CHANGE
 # ============================================================
 
 synthetic["temp_rate"] = (
@@ -637,7 +700,7 @@ synthetic["pressure_rate"] = (
 
 
 # ============================================================
-# 28. ROLLING MEAN
+# 29. ROLLING MEAN
 # ============================================================
 
 synthetic["temp_roll_mean_3"] = (
@@ -660,7 +723,7 @@ synthetic["pressure_roll_mean_3"] = (
 
 
 # ============================================================
-# 29. ROLLING STANDARD DEVIATION
+# 30. ROLLING STANDARD DEVIATION
 # ============================================================
 
 synthetic["temp_roll_std_3"] = (
@@ -683,7 +746,7 @@ synthetic["pressure_roll_std_3"] = (
 
 
 # ============================================================
-# 30. TIME FEATURES
+# 31. TIME FEATURES
 # ============================================================
 
 synthetic["hour"] = (
@@ -696,7 +759,7 @@ synthetic["month"] = (
 
 
 # ============================================================
-# 31. CYCLICAL TIME FEATURES
+# 32. CYCLICAL TIME FEATURES
 # ============================================================
 
 synthetic["hour_sin"] = np.sin(
@@ -717,7 +780,7 @@ synthetic["month_cos"] = np.cos(
 
 
 # ============================================================
-# 32. FINAL DATASET INFORMATION
+# 33. FINAL DATASET INFORMATION
 # ============================================================
 
 print("\n")
@@ -725,10 +788,8 @@ print("=" * 60)
 print("SYNTHETIC DATASET RESULTS")
 print("=" * 60)
 
-
 print("\nDataset shape:")
 print(synthetic.shape)
-
 
 print("\nDate range:")
 print(
@@ -737,12 +798,10 @@ print(
     synthetic["timestamp"].max()
 )
 
-
 print("\nNormal vs Anomaly:")
 print(
     synthetic["anomaly"].value_counts()
 )
-
 
 print("\nAnomaly type counts:")
 print(
@@ -751,14 +810,13 @@ print(
 
 
 # ============================================================
-# 33. DISPLAY ANOMALY RECORDS
+# 34. DISPLAY ANOMALY RECORDS
 # ============================================================
 
 print("\n")
 print("=" * 60)
-print("ANOMALY RECORDS")
+print("ANOMALY RECORD SAMPLE")
 print("=" * 60)
-
 
 anomaly_records = synthetic[
     synthetic["anomaly"] == 1
@@ -772,16 +830,15 @@ anomaly_records = synthetic[
     ]
 ]
 
-
 print(
-    anomaly_records.to_string(
+    anomaly_records.head(50).to_string(
         index=False
     )
 )
 
 
 # ============================================================
-# 34. MISSING VALUES
+# 35. MISSING VALUES
 # ============================================================
 
 print("\n")
@@ -789,21 +846,19 @@ print("=" * 60)
 print("MISSING VALUES")
 print("=" * 60)
 
-
 print(
     synthetic.isna().sum()
 )
 
 
 # ============================================================
-# 35. SAVE FINAL DATASET
+# 36. SAVE FINAL DATASET
 # ============================================================
 
 output_file = (
     OUTPUT_DIR
     / "synthetic_anomalies_2020_2024.csv"
 )
-
 
 synthetic.to_csv(
     output_file,
@@ -812,7 +867,7 @@ synthetic.to_csv(
 
 
 # ============================================================
-# 36. SUCCESS
+# 37. SUCCESS
 # ============================================================
 
 print("\n")

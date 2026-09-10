@@ -1,0 +1,2 @@
+detector,test_year,test_rows,actual_anomalies,final_predicted_anomalies,accuracy,precision,recall,f1,fpr,TP,FP,FN,TN
+Isolation Forest V2 + Temporal Rules,2024,8623,75,170,0.9882871390467355,0.4235294117647059,0.96,0.5877551020408164,0.011464670098268601,72,98,3,8450

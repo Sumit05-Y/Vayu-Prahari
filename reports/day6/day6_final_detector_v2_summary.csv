@@ -1,0 +1,2 @@
+detector,test_year,humidity_threshold,test_rows,actual_anomalies,predicted_anomalies,accuracy,precision,recall,f1,fpr,TP,FP,FN,TN
+Isolation Forest V2 + Temporal Rules + Humidity Rule,2024,10,8623,75,177,0.9879392322857474,0.4180790960451977,0.9866666666666667,0.5873015873015873,0.012049602246139449,74,103,1,8445

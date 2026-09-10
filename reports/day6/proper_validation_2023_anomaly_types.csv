@@ -1,0 +1,11 @@
+anomaly_type,actual_count,detected_count,missed_count,detection_rate
+humidity_drop,2,2,0,1.0
+humidity_spike,9,5,4,0.5555555555555556
+missing_temperature,10,10,0,1.0
+multivariate_inconsistency,7,1,6,0.14285714285714285
+pressure_drop,7,7,0,1.0
+pressure_spike,6,6,0,1.0
+temp_drift,10,10,0,1.0
+temp_drop,8,8,0,1.0
+temp_frozen,15,15,0,1.0
+temp_spike,6,6,0,1.0

@@ -1,0 +1,2 @@
+detector,test_year,accuracy,precision,recall,f1,fpr,TP,FP,FN,TN,temporal_precision,temporal_recall,temporal_f1
+Temporal Sensor Rules,2024,0.9965209323901194,1.0,0.6,0.75,0.0,45,0,30,8548,1.0,1.0,1.0

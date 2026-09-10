@@ -1,0 +1,2 @@
+test_year,training_years,n_estimators,max_samples,max_features,contamination,humidity_threshold,actual_anomalies,if_alerts,rule_alerts,final_alerts,TP,FP,FN,TN,accuracy,precision,recall,f1,fpr
+2024,2020-2023,300,0.6,1.0,0.005,10,75,70,59,123,70,53,5,8495,0.9932738026208976,0.5691056910569106,0.9333333333333333,0.7070707070707071,0.006200280767430978

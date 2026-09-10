@@ -1,0 +1,2 @@
+detector,training_years,validation_year,n_estimators,max_samples,max_features,contamination,humidity_threshold,actual_anomalies,predicted_anomalies,accuracy,precision,recall,f1,fpr,TP,FP,FN,TN
+Isolation Forest Validation Model + Sensor Rules,2020-2022,2023,300,0.8,1.0,0.01,10,80,146,0.990180406485499,0.4794520547945205,0.875,0.6194690265486725,0.008757778289928554,70,76,10,8602

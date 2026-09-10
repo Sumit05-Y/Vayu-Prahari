@@ -1,0 +1,2 @@
+model,n_estimators,max_samples,max_features,contamination,training_rows,test_rows,actual_anomalies,predicted_anomalies,accuracy,precision,recall,f1,fpr,TP,FP,FN,TN
+Isolation Forest v2,300,0.8,1.0,0.01,27399,8609,65,125,0.9842025786967128,0.216,0.4153846153846154,0.28421052631578947,0.01147003745318352,27,98,38,8446
