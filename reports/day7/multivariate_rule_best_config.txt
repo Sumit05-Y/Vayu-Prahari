@@ -1,0 +1,63 @@
+VAYU PRAHARI - BEST MULTIVARIATE RULE
+=====================================
+
+Validation year:
+2023
+
+Training years:
+2020-2022
+
+Isolation Forest:
+n_estimators = 300
+max_samples = 0.6
+max_features = 1.0
+contamination = 0.005
+
+Existing humidity threshold:
+10
+
+Best multivariate parameters:
+
+temperature residual threshold:
+8.0
+
+maximum humidity residual:
+5.0
+
+maximum pressure residual:
+1.0
+
+2023 performance with new rule:
+
+Accuracy:
+0.994291
+
+Precision:
+0.625000
+
+Recall:
+0.937500
+
+F1:
+0.750000
+
+False Positive Rate:
+0.005186
+
+TP:
+75
+
+FP:
+45
+
+FN:
+5
+
+TN:
+8633
+
+Multivariate anomalies detected:
+6 / 7
+
+Additional alerts caused by rule:
+15
